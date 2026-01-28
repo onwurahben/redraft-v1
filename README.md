@@ -39,6 +39,10 @@ Unlike simple "one-shot" generators, Redraft has a **Recursive Evaluation Flow**
 *   **In-Place Redrafting**: Blurs background cards and provides live progress updates as the AI iterates on your feedback.
 *   **Telegram Integration**: Approve or reject drafts on the go via a custom Telegram Bot. Rejecting a post via Telegram instantly triggers an AI rewrite loop on the server.
 
+### 🕒 Scheduled Content Pipeline
+*   **GitHub Actions Automation**: Pre-configured workflow to trigger a fresh content generation every 24 hours (Cron: `0 0 * * *`).
+*   **Dashboard "Kill Switch"**: A database-backed toggle on the dashboard allows you to enable or disable the automated daily runs with a single click, providing full control without editing code.
+
 ### 🛡️ Production-Grade Engineering
 *   **Persistence**: Powered by Supabase (PostgreSQL) for reliable data storage and activity logging.
 *   **Robust Networking**: Custom `safe_execute` wrappers with exponential backoff to handle transient socket errors on Windows/High-load environments.
