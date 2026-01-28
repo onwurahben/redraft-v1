@@ -32,7 +32,7 @@ graph TD
 ## ✨ Key Features
 
 ### 🧠 Intelligent Self-Correction Loop
-Unlike simple "one-shot" generators, Redraft has a **Recursive Evaluation Flow**. If a generated post contains corporate jargon (like *leverage*, *synergy*, or *holistic*) or lacks clear value, the Gemini-powered evaluator provides structured feedback. The GPT-4 agent then rewrites the content until it meets a "human-likeness" score or is sent for manual review.
+Unlike simple "one-shot" generators, Redraft has a **Recursive Evaluation Flow**. If a generated post contains AI buzzwords or corporate jargon, sounds robotic, or lacks clear value, the Gemini-powered evaluator provides structured feedback. The GPT-4 agent then rewrites the content until it meets a "human-likeness" score or is sent for manual review.
 
 ### 📱 Cross-Channel Review Workflow
 *   **Web Dashboard**: A sleek web administrative interface with real-time statistics and a "Clear UI" mode for productivity.
