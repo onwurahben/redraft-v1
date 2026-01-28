@@ -1,0 +1,8 @@
+flask
+python-dotenv
+openai
+google-genai
+supabase
+python-telegram-bot
+httpx
+gunicorn

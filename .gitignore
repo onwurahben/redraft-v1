@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Secrets
+google_key.json
+
+# Logs
+*.log
+error.txt
+
+# IDE
+.vscode/
+.idea/

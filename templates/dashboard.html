@@ -1,0 +1,221 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<header>
+    <div class="title-group">
+        <h1>Dashboard</h1>
+        <p>Overview of your LinkedIn content performance.</p>
+    </div>
+    <button class="btn btn-primary" id="open-modal-btn">
+        <i class="fas fa-plus"></i> Generate New Post
+    </button>
+</header>
+
+<!-- Generation Modal -->
+<div id="generation-modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" id="close-modal-btn"><i class="fas fa-times"></i></button>
+        <h2>Generate Post</h2>
+        <p>Enter a specific topic or let our AI brainstorm the next big idea for you.</p>
+
+        <div class="topic-input-group">
+            <input type="text" id="topic-input" class="topic-input"
+                placeholder="Enter topic (e.g. Remote Work, SaaS pricing...)">
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-primary" id="generate-manual-btn">
+                <i class="fas fa-magic"></i> Generate with this Topic
+            </button>
+            <button class="btn btn-ai" id="generate-ai-btn">
+                <i class="fas fa-robot"></i> Generate with AI Topic
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="progress-container"
+    style="display: none; margin: 20px 0; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span id="progress-text"
+            style="font-weight: 500; font-size: 0.9em; color: var(--text-muted);">Initializing...</span>
+        <span id="progress-percent" style="font-weight: 600; font-size: 0.9em; color: var(--accent);">0%</span>
+    </div>
+    <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+        <div id="progress-bar"
+            style="width: 0%; height: 100%; background: var(--accent, #ff8c00); transition: width 0.3s ease;"></div>
+    </div>
+</div>
+
+<section class="stats-grid">
+    <div class="stat-card">
+        <h3>Total Posts</h3>
+        <div class="value" id="stat-total">{{ stats.total_generated }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Pending Review</h3>
+        <div class="value" id="stat-pending">{{ stats.pending_review }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Topics Left</h3>
+        <div class="value" id="stat-topics">{{ stats.topics_available }}</div>
+    </div>
+</section>
+
+<section>
+    <div class="section-header">
+        <h2>Recent Activity</h2>
+    </div>
+    <div class="card" id="activity-feed">
+        {% for item in activity %}
+        <div class="activity-item">
+            <div class="activity-info">
+                <h4>{{ item.message }}</h4>
+                <p>{{ item.time or item.created_at }}</p>
+            </div>
+            <i class="fas fa-circle-{{ 'info' if item.type == 'info' else 'check' }} text-{{ item.type }}"></i>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function refreshDashboard() {
+        try {
+            const response = await fetch('/api/stats');
+            const data = await response.json();
+
+            // Update stats
+            document.getElementById('stat-total').innerText = data.stats.total_generated;
+            document.getElementById('stat-pending').innerText = data.stats.pending_review;
+            document.getElementById('stat-topics').innerText = data.stats.topics_available;
+
+            // Update activity feed
+            const feed = document.getElementById('activity-feed');
+            feed.innerHTML = data.activity.map(item => `
+                <div class="activity-item">
+                    <div class="activity-info">
+                        <h4>${item.message}</h4>
+                        <p>${item.time || item.created_at}</p>
+                    </div>
+                    <i class="fas fa-circle-${item.type === 'info' ? 'info' : 'check'} text-${item.type}"></i>
+                </div>
+            `).join('');
+
+        } catch (e) {
+            console.error("Polling failed", e);
+        }
+    }
+
+    // Auto-refresh every 5 seconds
+    setInterval(refreshDashboard, 5000);
+
+    // Modal Control Logic
+    const modal = document.getElementById('generation-modal');
+    const openModalBtn = document.getElementById('open-modal-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const topicInput = document.getElementById('topic-input');
+
+    openModalBtn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+        topicInput.focus();
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        topicInput.value = '';
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+            topicInput.value = '';
+        }
+    });
+
+    // Helper for initiating generation
+    async function startGeneration(topic = null) {
+        modal.style.display = 'none';
+
+        const openBtn = document.getElementById('open-modal-btn');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const progressPercent = document.getElementById('progress-percent');
+
+        // Reset UI
+        openBtn.disabled = true;
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '5%';
+        progressText.innerText = "Starting...";
+        progressPercent.innerText = "5%";
+
+        try {
+            // Trigger start with optional topic
+            const response = await fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: topic })
+            });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                // Start polling
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const progRes = await fetch('/api/progress');
+                        const status = await progRes.json();
+
+                        // Update UI
+                        progressBar.style.width = status.progress + '%';
+                        progressText.innerText = status.message;
+                        progressPercent.innerText = status.progress + '%';
+
+                        // Check completion
+                        if (status.status === 'idle' && status.progress === 100) {
+                            clearInterval(pollInterval);
+                            setTimeout(() => {
+                                progressContainer.style.display = 'none';
+                                openBtn.disabled = false;
+                                refreshDashboard(); // Refresh stats
+                                showNotification('New draft generated!', 'success');
+                            }, 1000);
+                        } else if (status.status === 'error') {
+                            clearInterval(pollInterval);
+                            showNotification('Generation Failed', 'error');
+                            openBtn.disabled = false;
+                            progressContainer.style.display = 'none';
+                        }
+                    } catch (e) {
+                        console.error('Polling error', e);
+                    }
+                }, 1000); // Poll every 1s
+            } else {
+                showNotification('Error: ' + data.message, 'error');
+                openBtn.disabled = false;
+                progressContainer.style.display = 'none';
+            }
+        } catch (e) {
+            showNotification('Request failed.', 'error');
+            openBtn.disabled = false;
+            progressContainer.style.display = 'none';
+        }
+    }
+
+    // Modal Actions Logic
+    document.getElementById('generate-manual-btn').addEventListener('click', () => {
+        const topic = topicInput.value.trim();
+        if (!topic) {
+            showNotification('Please enter a topic first', 'error');
+            return;
+        }
+        startGeneration(topic);
+    });
+
+    document.getElementById('generate-ai-btn').addEventListener('click', () => {
+        startGeneration(null);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<header>
+    <div class="title-group">
+        <h1>Settings</h1>
+        <p>Configure your content generation pipeline and notifications.</p>
+    </div>
+</header>
+
+<div class="card">
+    <form id="settings-form">
+        <div class="form-group">
+            <label>Telegram Bot Token</label>
+            <input type="password" value="••••••••••••••••" readonly>
+            <p class="help-text">Managed via environment variables.</p>
+        </div>
+
+        <div class="form-group">
+            <label>OpenAI AI Model</label>
+            <select>
+                <option>gpt-4</option>
+                <option>gpt-3.5-turbo</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Automation Interval</label>
+            <div class="input-group">
+                <input type="number" value="24">
+                <span>hours</span>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-primary" onclick="alert('Settings saved (simulated)')">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 2rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+    }
+
+    .help-text {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    .input-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .input-group input {
+        width: 100px;
+    }
+
+    .form-actions {
+        border-top: 1px solid var(--border-color);
+        padding-top: 2rem;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}

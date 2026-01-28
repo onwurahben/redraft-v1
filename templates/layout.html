@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Redraft - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fas fa-feather-alt"></i> Redraft
+        </div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="/" class="{{ 'active' if request.path == '/' }}"><i class="fas fa-home"></i> Dashboard</a>
+                </li>
+                <li><a href="/review" class="{{ 'active' if request.path == '/review' }}"><i
+                            class="fas fa-check-circle"></i> Review {% if stats and stats.pending_review > 0 %}<span
+                            class="badge">{{ stats.pending_review }}</span>{% endif %}</a></li>
+                <li><a href="/settings" class="{{ 'active' if request.path == '/settings' }}"><i class="fas fa-cog"></i>
+                        Settings</a></li>
+            </ul>
+        </nav>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            <i class="fas fa-moon"></i>
+        </button>
+    </aside>
+
+    <div id="toast-container"></div>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

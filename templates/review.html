@@ -1,0 +1,251 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<header>
+    <div class="title-group">
+        <h1>Review Posts</h1>
+        <p>Manage posts that require manual intervention or approval.</p>
+    </div>
+    <button class="btn btn-outline" onclick="clearPosts()">
+        <i class="fas fa-eraser"></i> Clear UI
+    </button>
+</header>
+
+{% if posts %}
+<div class="posts-list">
+    {% for post in posts %}
+    <div class="card mb-2" id="post-{{ post.id }}" style="position: relative; overflow: hidden;">
+        <!-- Progress Overlay -->
+        <div class="post-overlay" id="overlay-{{ post.id }}">
+            <div class="overlay-content">
+                <i class="fas fa-robot fa-spin fa-2x mb-1"></i>
+                <h4>AI is Redrafting...</h4>
+                <div class="progress-line"></div>
+            </div>
+        </div>
+        <div class="post-header">
+            <h3>Topic: {{ post.topic }}</h3>
+            <div class="actions" style="display: flex; gap: 0.75rem;">
+                <button class="btn btn-primary" data-id="{{ post.id }}" onclick="approvePost(this.dataset.id)">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="btn btn-outline" data-id="{{ post.id }}" data-topic="{{ post.topic }}"
+                    onclick="dismissPost(this.dataset.id, this.dataset.topic)">
+                    <i class="fas fa-redo-alt"></i> Redraft
+                </button>
+            </div>
+        </div>
+        <div class="post-editor">
+            <textarea class="editor-area" id="content-{{ post.id }}">{{ post.content }}</textarea>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card text-center">
+    <i class="fas fa-clipboard-check fa-3x mb-1" style="color: var(--text-secondary);"></i>
+    <h3>All caught up!</h3>
+    <p>No posts are currently pending review.</p>
+</div>
+{% endif %}
+
+<style>
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .post-editor {
+        margin-top: 1rem;
+    }
+
+    .editor-area {
+        width: 100%;
+        min-height: 200px;
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        font-family: inherit;
+        resize: vertical;
+    }
+
+    .mb-2 {
+        margin-bottom: 2rem;
+    }
+
+    .text-center {
+        text-align: center;
+        padding: 4rem;
+    }
+
+    .btn-outline {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    /* In-place progress overlay */
+    .post-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(var(--card-bg-rgb, 18, 18, 18), 0.8);
+        backdrop-filter: blur(8px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        text-align: center;
+    }
+
+    .overlay-content h4 {
+        margin-bottom: 1rem;
+        color: var(--accent);
+    }
+
+    .progress-line {
+        width: 200px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .progress-line::after {
+        content: '';
+        position: absolute;
+        left: -50%;
+        height: 100%;
+        width: 50%;
+        background: var(--accent);
+        border-radius: 2px;
+        animation: indeterminate 1.5s infinite linear;
+    }
+
+    @keyframes indeterminate {
+        0% {
+            left: -50%;
+        }
+
+        100% {
+            left: 100%;
+        }
+    }
+
+    .blur-text {
+        filter: blur(4px);
+        pointer-events: none;
+        user-select: none;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function approvePost(id) {
+        const content = document.getElementById(`content-${id}`).value;
+        try {
+            const response = await fetch('/api/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, content: content })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                // Placeholder for LinkedIn API POST
+                console.log("Post content sent to LinkedIn API");
+                showNotification('Post approved and sent to LinkedIn!', 'success');
+                document.getElementById(`post-${id}`).remove();
+                if (document.querySelectorAll('.posts-list .card').length === 0) {
+                    setTimeout(() => location.reload(), 1500);
+                }
+            } else {
+                showNotification('Error: ' + data.message, 'error');
+            }
+        } catch (e) {
+            showNotification('Failed to approve post.', 'error');
+        }
+    }
+
+    async function dismissPost(id, topic) {
+        const content = document.getElementById(`content-${id}`).value;
+        const postCard = document.getElementById(`post-${id}`);
+        const overlay = document.getElementById(`overlay-${id}`);
+        const innerContent = postCard.querySelectorAll('.post-header, .post-editor');
+
+        // Show overlay and blur content
+        overlay.style.display = 'flex';
+        innerContent.forEach(el => el.classList.add('blur-text'));
+
+        showNotification('Draft dismissed. AI is rewriting...', 'info');
+
+        try {
+            const response = await fetch('/api/dismiss', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, content: content, topic: topic })
+            });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                // START POLLING FOR UPDATE
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const res = await fetch(`/api/post/${id}`);
+                        const postData = await res.json();
+
+                        if (postData.status === 'success') {
+                            const post = postData.post;
+                            // If status went back to 'pending', it means it's ready
+                            if (post.status === 'pending') {
+                                clearInterval(pollInterval);
+
+                                // Update content
+                                document.getElementById(`content-${id}`).value = post.content;
+
+                                // Reset UI
+                                overlay.style.display = 'none';
+                                innerContent.forEach(el => el.classList.remove('blur-text'));
+
+                                showNotification('Redraft complete!', 'success');
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Polling error:", e);
+                    }
+                }, 2000); // Poll every 2 seconds
+
+            } else {
+                showNotification('Error dismissing post: ' + data.message, 'error');
+                overlay.style.display = 'none';
+                innerContent.forEach(el => el.classList.remove('blur-text'));
+            }
+        } catch (e) {
+            showNotification('Failed to connect to server.', 'error');
+            overlay.style.display = 'none';
+            innerContent.forEach(el => el.classList.remove('blur-text'));
+        }
+    }
+
+    function clearPosts() {
+        const list = document.querySelector('.posts-list');
+        if (list) {
+            list.innerHTML = `
+                <div class="card text-center">
+                    <i class="fas fa-clipboard-check fa-3x mb-1" style="color: var(--text-secondary);"></i>
+                    <h3>UI Cleared</h3>
+                    <p>Drafts hidden. Refresh to see them again.</p>
+                </div>`;
+            showNotification('UI cleared (database untouched)', 'info');
+        }
+    }
+</script>
+{% endblock %}
