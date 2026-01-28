@@ -92,10 +92,18 @@ Access the dashboard at `http://localhost:5000`.
 
 The project comes pre-configured for modern CI/CD flows:
 
-**Docker Support:**
+**Docker & Docker Compose:**
+The simplest way to run locally is using Docker Compose, which automatically handles your `.env` file and port mapping:
+
+```bash
+# Run with Docker Compose
+docker compose up --build
+```
+
+Alternatively, use standard Docker commands:
 ```bash
 docker build -t redraft-ai .
-docker run -p 7860:7860 --env-file .env redraft-ai
+docker run -p 5000:7860 --env-file .env redraft-ai
 ```
 
 **Hugging Face Spaces:**

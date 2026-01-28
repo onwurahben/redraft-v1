@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      # Prevents local __pycache__ from overwriting container's
+      - /app/__pycache__
+    restart: always
