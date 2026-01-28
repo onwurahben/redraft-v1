@@ -117,4 +117,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ---
 
 ## 👋 Connect
-Created by [Your Name] – follow my journey on [LinkedIn](https://www.linkedin.com/in/ben-onwurah)
+Created by Ben Onwurah – follow my journey on [LinkedIn](https://www.linkedin.com/in/ben-onwurah)

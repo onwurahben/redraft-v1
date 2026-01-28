@@ -196,3 +196,27 @@ def delete_topic(topic):
     except Exception as e:
         logger.error(f"Error deleting topic: {e}")
         return False
+
+def get_setting(key, default=None):
+    """Fetch a configuration setting from the database."""
+    if not supabase:
+        return default
+    try:
+        response = safe_execute(supabase.table("settings").select("value").eq("key", key))
+        if response.data:
+            return response.data[0]["value"]
+        return default
+    except Exception as e:
+        logger.error(f"Error fetching setting {key}: {e}")
+        return default
+
+def update_setting(key, value):
+    """Update or create a configuration setting in the database."""
+    if not supabase:
+        return False
+    try:
+        safe_execute(supabase.table("settings").upsert({"key": key, "value": value}))
+        return True
+    except Exception as e:
+        logger.error(f"Error updating setting {key}: {e}")
+        return False

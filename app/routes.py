@@ -159,6 +159,27 @@ def register_routes(app):
         return jsonify({"status": "error", "message": "Post not found"}), 404
 
     #-------------------------------
+    # API: Settings
+    #-------------------------------
+    @app.route('/api/settings/automation', methods=['GET', 'POST'])
+    def api_automation_setting():
+        """Get or update the daily generation automation setting."""
+        from memory.db_handler import get_setting, update_setting, log_activity
+        
+        if request.method == 'POST':
+            data = request.json
+            enabled = data.get('enabled', True)
+            update_setting("daily_generation_enabled", enabled)
+            
+            status_text = "ENABLED" if enabled else "DISABLED"
+            log_activity("info", f"Daily automation {status_text} via dashboard.")
+            return jsonify({"status": "success", "enabled": enabled})
+        
+        # GET request
+        enabled = get_setting("daily_generation_enabled", default=True)
+        return jsonify({"status": "success", "enabled": enabled})
+
+    #-------------------------------
     # API: Approve Post
     # Approves a pending post both in DB and in-memory.
     # Payload: { "id": str, "content": str }

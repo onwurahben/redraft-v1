@@ -11,11 +11,18 @@ from llms.prompts import SYSTEM_PROMPT_1
 logger = get_logger("GPT4 Generator")
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("Set your OPENAI_API_KEY environment variable!")
+# Global OpenAI client placeholder
+_client = None
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+def _get_client():
+    """Lazy initialization of the OpenAI client."""
+    global _client
+    if _client is None:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("Set your OPENAI_API_KEY environment variable!")
+        _client = OpenAI(api_key=api_key)
+    return _client
 
 
 def generate_post(prompt):
@@ -29,6 +36,7 @@ def generate_post(prompt):
         str: Generated text
     """
     try:
+        client = _get_client()
         response = client.chat.completions.create(
             model="gpt-4",
             messages=prompt,
