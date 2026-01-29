@@ -5,7 +5,7 @@ from notifier.telegram import pending_posts, topic_id_map
 from utils.logger import get_logger
 from memory.db_handler import (
     get_stats, get_activity, log_activity,
-    get_pending_posts, update_post_status
+    get_pending_posts, update_post_status, get_setting, update_setting, log_activity
 )
 
 logger = get_logger("Flask Dashboard")
@@ -164,8 +164,7 @@ def register_routes(app):
     @app.route('/api/settings/automation', methods=['GET', 'POST'])
     def api_automation_setting():
         """Get or update the daily generation automation setting."""
-        from memory.db_handler import get_setting, update_setting, log_activity
-        
+       
         if request.method == 'POST':
             data = request.json
             enabled = data.get('enabled', True)

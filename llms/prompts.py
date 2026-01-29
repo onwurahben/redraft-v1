@@ -15,7 +15,7 @@ RULES:
 - End with a call-to-action asking the reader to engage
 - Include 3 relevant hashtags
 
-WORDS TO AVOID: Navigate, Leverage, Landscape, Evolve, Harness, Optimize, Streamline, Empower, Transform, Revolutionize, Foster, Fascinating, Synergy, Holistic, Dynamic, Robust, Seamless, Unprecedented, Game changer, Game-changing, Thought-provoking, In today's fast-paced world, Superheroes, Impact, Superpower.
+WORDS TO AVOID: Navigate, Leverage, Landscape, Evolve, Harness, Optimize, Streamline, Empower, Transform, Revolutionize, Foster, Fascinating, Synergy, Holistic, Dynamic, Potential, Seamless, Unprecedented, Game changer, Game-changing, Thought-provoking, In today's fast-paced world, Superheroes, Impact, Superpower.
 
 FINAL CHECK: Ensure the post is concise and sounds human without corporate jargon. Make sure it does not include the WORDS TO AVOID!!
 
