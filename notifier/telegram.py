@@ -1,7 +1,7 @@
 # notifier/telegram.py: Handles communication with the user via Telegram for draft approval or rejection.
 
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from utils.logger import get_logger
 from llms.gpt4_generator import generate_post
