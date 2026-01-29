@@ -33,7 +33,7 @@ graph TD
     E -- Pass / Max Retries --> G[Supabase DB Persistence]
     G --> H[Web Dashboard]
     G --> I[Telegram Bot Notifications]
-    H -- Approval --> J[LinkedIn API Placeholder]
+    H -- Approval --> J[LinkedIn]
     I -- Rejection --> F
 ```
 
