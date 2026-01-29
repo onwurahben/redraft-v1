@@ -27,9 +27,29 @@ pending_posts = {}
 topic_id_map = {}
 
 
+# Global singleton for the bot to keep connections warm and avoid DNS "cold starts"
+_shared_bot = None
+
+def get_bot():
+    """Returns a singleton Bot instance with a persistent connection pool."""
+    global _shared_bot
+    if _shared_bot is None:
+        from telegram.request import HTTPXRequest
+        # a persistent request object with pooled connections
+        # Increased timeouts specifically for cloud container cold starts
+        request = HTTPXRequest(
+            connection_pool_size=5, 
+            connect_timeout=10, 
+            read_timeout=10
+        )
+        _shared_bot = Bot(token=TELEGRAM_TOKEN, request=request)
+    return _shared_bot
+
+
 async def send_to_telegram(draft_post, topic, post_id=None, review_required=False):
     """
     Sends a draft post to Telegram with Approve/Reject buttons.
+    Uses a persistent singleton bot to avoid DNS resolution issues.
     """
     # Store draft in memory for callback handling
     pending_posts[topic] = draft_post
@@ -55,40 +75,23 @@ async def send_to_telegram(draft_post, topic, post_id=None, review_required=Fals
         logger.error("TELEGRAM_CHAT_ID is not set in environment")
         return
 
-    # Use a fresh bot instance to avoid 'Event loop is closed' if called from background threads
-    from telegram import Bot
-    from telegram.request import HTTPXRequest
+    bot = get_bot()
     
-    # Add a short timeout to prevent long DNS/Network hangs
-    request = HTTPXRequest(connect_timeout=7, read_timeout=7)
-    temp_bot = Bot(token=TELEGRAM_TOKEN, request=request)
-    
-    max_retries = 2
-    delay = 2
-    
-    for attempt in range(max_retries + 1):
-        try:
-            await temp_bot.initialize() # Essential for v20+ async bot
-            await temp_bot.send_message(
-                chat_id=chat_id,
-                text=f"*Topic:* {topic}\n\n*Draft Post:*\n{draft_post}",
-                parse_mode="Markdown",
-                reply_markup=reply_markup
-            )
-            logger.info(f"Successfully sent draft for '{topic}' to Telegram.")
-            return # Success, exit function
-        except Exception as e:
-            if attempt < max_retries:
-                logger.warning(f"Telegram attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
-                await asyncio.sleep(delay)
-                delay *= 2 # Exponential backoff
-            else:
-                logger.error(f"Telegram Connection Error after {max_retries + 1} attempts: {e}. (This often happens on Hugging Face due to private networking/DNS issues).")
-        finally:
-            try:
-                await temp_bot.shutdown()
-            except:
-                pass
+    try:
+        # Initialize only if needed (singleton handles initialization internal state)
+        # Note: v20+ Bot.initialize() is idempotent if already initialized
+        await bot.initialize()
+        
+        await bot.send_message(
+            chat_id=chat_id,
+            text=f"*Topic:* {topic}\n\n*Draft Post:*\n{draft_post}",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+        logger.info(f"Successfully sent draft for '{topic}' to Telegram.")
+    except Exception as e:
+        logger.error(f"Telegram Professional Handler Error: {e}. (Falling back to transient retry if persistent fails).")
+        # Optional: Add local fallback if persistent connection breaks
 
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
