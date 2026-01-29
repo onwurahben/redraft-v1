@@ -8,8 +8,7 @@ from llms.prompts import EVALUATOR_PROMPT_LINKEDIN as EVALUATOR_SYSTEM_PROMPT
 
 logger = get_logger("Gemini Evaluator")
 
-# Set global GenAI client using Application Credentials (google.key.json)
-# Ensure GOOGLE_APPLICATION_CREDENTIALS points to your JSON key (Hugging Face Spaces)
+# Note: newer GenAI SDK client expects Application Credentials (google.key.json) file path.
 
 _client = None
 
@@ -17,17 +16,29 @@ def _get_client():
     """Lazy initialization of the Gemini client."""
     global _client
     if _client is None:
-        google_creds_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    
+        creds_val = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         
-        if google_creds_json:
+        # If the env var contains the raw JSON string (common on HF/GitHub Secrets)
+        if creds_val and creds_val.strip().startswith('{'):
             try:
-                creds = json.loads(google_creds_json)
-                _client = genai.Client(vertexai=True, api_key=creds) # Adjust if creds is a dict
+                # Write the JSON to a temporary file so Google Auth can find it
+                # We use /tmp because it's writable in most container environments (Hugging Face)
+                key_path = "/tmp/google_key.json"
+                with open(key_path, "w") as f:
+                    f.write(creds_val)
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
+                logger.info(f"Detected JSON credentials in ENV. Wrote to {key_path}")
             except Exception as e:
-                logger.warning(f"Failed to load JSON credentials from ENV: {e}. Falling back to default.")
-                _client = genai.Client(vertexai=True)
-        else: 
+                logger.error(f"Failed to write credentials file: {e}")
+        
+        try:
+            # genai.Client with vertexai=True will now find the credentials at GOOGLE_APPLICATION_CREDENTIALS
             _client = genai.Client(vertexai=True)
+            logger.info("GenAI Client initialized successfully using Vertex AI.")
+        except Exception as e:
+            logger.error(f"Failed to initialize GenAI Client: {e}")
+            raise
     return _client
 
 
