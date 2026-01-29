@@ -76,8 +76,9 @@ async def send_to_telegram(draft_post, topic, post_id=None, review_required=Fals
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
+        logger.info(f"Successfully sent draft for '{topic}' to Telegram.")
     except Exception as e:
-        logger.error(f"Failed to send Telegram message: {e}")
+        logger.error(f"Telegram Connection Error: {e}. Check if api.telegram.org is reachable from this environment.")
     finally:
         try:
             await temp_bot.shutdown()
