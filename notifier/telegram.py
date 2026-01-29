@@ -60,25 +60,35 @@ async def send_to_telegram(draft_post, topic, post_id=None, review_required=Fals
     from telegram.request import HTTPXRequest
     
     # Add a short timeout to prevent long DNS/Network hangs
-    request = HTTPXRequest(connect_timeout=5, read_timeout=5)
+    request = HTTPXRequest(connect_timeout=7, read_timeout=7)
     temp_bot = Bot(token=TELEGRAM_TOKEN, request=request)
     
-    try:
-        await temp_bot.initialize() # Essential for v20+ async bot
-        await temp_bot.send_message(
-            chat_id=chat_id,
-            text=f"*Topic:* {topic}\n\n*Draft Post:*\n{draft_post}",
-            parse_mode="Markdown",
-            reply_markup=reply_markup
-        )
-        logger.info(f"Successfully sent draft for '{topic}' to Telegram.")
-    except Exception as e:
-        logger.error(f"Telegram Connection Error: {e}. (This could be a temporary DNS issue on Hugging Face).")
-    finally:
+    max_retries = 2
+    delay = 2
+    
+    for attempt in range(max_retries + 1):
         try:
-            await temp_bot.shutdown()
-        except:
-            pass
+            await temp_bot.initialize() # Essential for v20+ async bot
+            await temp_bot.send_message(
+                chat_id=chat_id,
+                text=f"*Topic:* {topic}\n\n*Draft Post:*\n{draft_post}",
+                parse_mode="Markdown",
+                reply_markup=reply_markup
+            )
+            logger.info(f"Successfully sent draft for '{topic}' to Telegram.")
+            return # Success, exit function
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(f"Telegram attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
+                await asyncio.sleep(delay)
+                delay *= 2 # Exponential backoff
+            else:
+                logger.error(f"Telegram Connection Error after {max_retries + 1} attempts: {e}. (This often happens on Hugging Face due to private networking/DNS issues).")
+        finally:
+            try:
+                await temp_bot.shutdown()
+            except:
+                pass
 
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
