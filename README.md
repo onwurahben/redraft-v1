@@ -1,3 +1,13 @@
+---
+title: Redraft AI Content Engine
+emoji: ✍️
+colorFrom: orange
+colorTo: red
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🤖 Redraft: Enterprise AI LinkedIn Content Engine
 
 [![Tech Stack](https://img.shields.io/badge/Stack-Flask%20%7C%20GPT--4%20%7C%20Gemini%202.0%20%7C%20Supabase-orange)](https://github.com/yourusername/redraft)
