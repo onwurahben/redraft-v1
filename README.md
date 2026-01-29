@@ -1,7 +1,7 @@
 ---
 title: Redraft AI Content Engine
 emoji: ✍️
-colorFrom: orange
+colorFrom: blue
 colorTo: red
 sdk: docker
 app_port: 7860
