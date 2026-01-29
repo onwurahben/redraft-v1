@@ -227,8 +227,8 @@ def register_routes(app):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                loop.run_until_complete(run_evaluation_flow(content, topic, post_id=post_id))
-                log_activity("info", f"Rewrite triggered for dismissed post on '{topic}'")
+                loop.run_until_complete(run_evaluation_flow(content, topic, post_id=post_id, force_rewrite=True))
+                log_activity("info", f"Manual rewrite triggered for post on '{topic}'")
             except Exception as e:
                 logger.error(f"Rewrite failed: {e}")
             finally:

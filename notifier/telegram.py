@@ -53,20 +53,15 @@ async def send_to_telegram(draft_post, topic, post_id=None, review_required=Fals
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
     if not chat_id:
         logger.error("TELEGRAM_CHAT_ID is not set in environment")
-        # Continue to DB save even if chat_id is missing, but maybe return or something?
-        # Actually, let's just log and continue for the DB update.
-    
-    # Save to database (Do this first so UI updates even if Telegram fails)
-    from memory.db_handler import log_activity, add_post
-    add_post(callback_id, topic, draft_post, status="pending")
-    log_activity("info", f"Draft for '{topic}' sent for review (ID: {callback_id}).")
-
-    if not chat_id:
         return
 
     # Use a fresh bot instance to avoid 'Event loop is closed' if called from background threads
     from telegram import Bot
-    temp_bot = Bot(token=TELEGRAM_TOKEN)
+    from telegram.request import HTTPXRequest
+    
+    # Add a short timeout to prevent long DNS/Network hangs
+    request = HTTPXRequest(connect_timeout=5, read_timeout=5)
+    temp_bot = Bot(token=TELEGRAM_TOKEN, request=request)
     
     try:
         await temp_bot.initialize() # Essential for v20+ async bot
@@ -78,7 +73,7 @@ async def send_to_telegram(draft_post, topic, post_id=None, review_required=Fals
         )
         logger.info(f"Successfully sent draft for '{topic}' to Telegram.")
     except Exception as e:
-        logger.error(f"Telegram Connection Error: {e}. Check if api.telegram.org is reachable from this environment.")
+        logger.error(f"Telegram Connection Error: {e}. (This could be a temporary DNS issue on Hugging Face).")
     finally:
         try:
             await temp_bot.shutdown()
@@ -127,7 +122,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             new_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(new_loop)
             try:
-                new_loop.run_until_complete(run_evaluation_flow(draft_post, topic, post_id=callback_id))
+                new_loop.run_until_complete(run_evaluation_flow(draft_post, topic, post_id=callback_id, force_rewrite=True))
             except Exception as e:
                 logger.error(f"Telegram rewrite failed: {e}")
             finally:
